@@ -13,8 +13,6 @@ from pkg_resources import resource_filename
 
 # Import modules
 import matplotlib.pyplot as pl
-import matplotlib as mpl
-
 import numpy as np
 import pandas as pd
 
@@ -26,7 +24,7 @@ except Exception:
 # Import from package
 from fastquant import get_pse_data_cache
 
-mpl.style.use("fivethirtyeight")
+pl.style.use("fivethirtyeight")
 DATA_PATH = resource_filename(__name__, "../data")
 CALENDAR_FORMAT = "%m-%d-%Y"
 TODAY = datetime.now().date().strftime(CALENDAR_FORMAT)
