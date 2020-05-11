@@ -7,6 +7,7 @@ from __future__ import (
 )
 from pkg_resources import resource_filename
 import datetime
+import os
 import sys
 
 # Import modules
@@ -514,6 +515,7 @@ def backtest(
     data_format="c",
     plot=True,
     verbose=True,
+    maxcpu=1,
     sort_by="rnorm",
     **kwargs
 ):
@@ -525,7 +527,7 @@ def backtest(
 
     # Setting inital support for 1 cpu
     # Return the full strategy object to get all run information
-    cerebro = bt.Cerebro(stdstats=False, maxcpus=1, optreturn=False)
+    cerebro = bt.Cerebro(stdstats=False, maxcpus=maxcpu, optreturn=False)
     cerebro.addobserver(bt.observers.Broker)
     cerebro.addobserver(bt.observers.Trades)
     cerebro.addobserver(bt.observers.BuySell)
@@ -617,7 +619,9 @@ def backtest(
     optim_idxs = np.argsort(metrics_df[sort_by].values)[::-1]
     sorted_params_df = params_df.iloc[optim_idxs].reset_index(drop=True)
     sorted_metrics_df = metrics_df.iloc[optim_idxs].reset_index(drop=True)
-    sorted_combined_df = pd.concat([sorted_params_df, sorted_metrics_df], axis=1)
+    sorted_combined_df = pd.concat(
+        [sorted_params_df, sorted_metrics_df], axis=1
+    )
 
     # print out the result
     print("Time used (seconds):", str(tend - tstart))
