@@ -80,6 +80,8 @@ class Network:
         self.filtered_data = self.filter_data()
         self.company_table = self.load_company_table()
         self.all_sectors = self.company_table.Sector.unique().tolist()
+        # self.all_sectors = self.company_table.Sector.str.lower().unique().tolist()
+        # self.all_subsectors = self.company_table.Subsector.str.lower().unique().tolist()
         self.all_subsectors = self.company_table.Subsector.unique().tolist()
         self.price_corr = self.compute_corr()
         self.metric = metric.lower()
