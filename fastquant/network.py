@@ -104,13 +104,27 @@ class Network:
         ].values[0]
         return sector
 
+    def get_subsectors_of_sector(self, sector):
+        """get subsectors under a sector
+        """
+        info = self.company_table.copy()
+        subsectors = info.loc[
+            info["Sector"].isin([sector]), "Subsector"
+        ].unique()
+        return subsectors
+
     def get_symbols_of_a_sector(self, sector, subsector=False, verbose=False):
         """get symbols of members in the sector
         """
         info = self.company_table.copy()
         column = "Subsector" if subsector else "Sector"
         sectors_dict = info[["Stock Symbol", column]].groupby(column).groups
-
+        if subsector:
+            errmsg = "{} not in\n{}".format(sector, self.all_subsectors)
+            assert sector in self.all_subsectors, errmsg
+        else:
+            errmsg = "{} not in\n{}".format(sector, self.all_sectors)
+            assert sector in self.all_sectors, errmsg
         sector_indices = sectors_dict[sector]
         sector_symbols = info.loc[sector_indices, "Stock Symbol"]
         data_availability_indices = self.filtered_data.columns.isin(

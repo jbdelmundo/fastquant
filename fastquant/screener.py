@@ -71,6 +71,7 @@ class Screener(Network):
         self,
         indicator=None,
         sector=None,
+        subsector=False,
         start_date=None,
         end_date=None,
         daily=False,
@@ -80,7 +81,7 @@ class Screener(Network):
             start_date=start_date, end_date=end_date
         )
         if sector is not None:
-            symbols = self.get_symbols_of_a_sector(sector)
+            symbols = self.get_symbols_of_a_sector(sector, subsector=subsector)
             data_recent = data_recent.loc[:, symbols]
 
         if indicator == self.data_type:
@@ -113,60 +114,11 @@ class Screener(Network):
         else:
             raise ValueError("{} not found!".format(indicator))
 
-    def plot_subsector(
-        self,
-        subsector,
-        kind="line",
-        start_date=None,
-        end_date=None,
-        dt_format="%b %d",
-        ax=None,
-        figsize=(8, 8),
-    ):
-        start_date = self.start_date if start_date is None else start_date
-        end_date = self.end_date if end_date is None else end_date
-
-        if ax is None:
-            fig, ax = pl.subplots(figsize=figsize)
-
-        symbols = self.get_symbols_of_a_sector(subsector, subsector=True)
-        data = self.filter_date(start_date, end_date)[symbols]
-        pc = data.pct_change().apply(lambda x: x * 100)
-
-        if kind == "line":
-            ax = pc.plot(ax=ax, marker="o")
-            pl.setp(
-                ax,
-                xlabel="",
-                ylabel="Price change (%)",
-                xlim=(start_date, end_date),
-            )
-            ax.legend()
-            ax.set_title(f"{subsector} subsector")
-            # set ticks every week
-            ax.xaxis.set_major_locator(mdates.WeekdayLocator())
-            # set major ticks format
-            ax.xaxis.set_major_formatter(mdates.DateFormatter(dt_format))
-        elif (kind == "density") | (kind == "kde"):
-            ax = pc.plot(ax=ax, kind="density", subplots=False)
-            ax.legend(title=f"{subsector} subsector")
-
-            for n, m in enumerate(pc.mean()):
-                c = ax.get_lines()[n].get_color()
-                ax.axvline(m, 0, 1, ls="--", lw=2, c=c)
-
-            # ax.set_xlim(-10,10)
-            ax.set_title(f"Data since {start_date}")
-            ax.set_xlabel("Price change (%)")
-
-        else:
-            raise ValueError(f"{kind} not found!")
-        return ax
-
-    def plot_sectors(
+    def plot_sector(
         self,
         sector,
         per_symbol=False,
+        kind="boxplot",
         indicator=None,
         start_date=None,
         end_date=None,
@@ -218,7 +170,7 @@ class Screener(Network):
         return ax
 
     def get_indicator_per_sector(
-        self, indicator=None, sector=None, start_date=None, end_date=None
+        self, indicator=None, start_date=None, end_date=None
     ):
         indicator = self.indicator if indicator is None else indicator
 
@@ -237,25 +189,93 @@ class Screener(Network):
 
         return pd.concat(df)
 
+    def get_indicator_per_subsector(
+        self, indicator=None, start_date=None, end_date=None
+    ):
+        indicator = self.indicator if indicator is None else indicator
+
+        df = []
+        for subsector in self.all_subsectors:
+            d = self.get_technical_indicator_data(
+                daily=True,
+                start_date=start_date,
+                indicator=indicator,
+                subsector=True,
+            ).mean()
+            d.name = indicator
+            d = d.reset_index()
+            d["subsector"] = subsector
+            df.append(d)
+
+        return pd.concat(df)
+
+    def plot_subsector(
+        self,
+        subsector,
+        kind="line",
+        start_date=None,
+        end_date=None,
+        dt_format="%b %d",
+        ax=None,
+        figsize=(8, 8),
+    ):
+        start_date = self.start_date if start_date is None else start_date
+        end_date = self.end_date if end_date is None else end_date
+
+        if ax is None:
+            fig, ax = pl.subplots(figsize=figsize)
+
+        symbols = self.get_symbols_of_a_sector(subsector, subsector=True)
+        data = self.filter_date(start_date, end_date)[symbols]
+        pc = data.pct_change().apply(lambda x: x * 100)
+
+        if kind == "line":
+            ax = pc.plot(ax=ax, marker="o")
+            pl.setp(
+                ax,
+                xlabel="",
+                ylabel="Price change (%)",
+                xlim=(start_date, end_date),
+            )
+            ax.legend()
+            ax.set_title(f"{subsector} subsector")
+            # set ticks every week
+            ax.xaxis.set_major_locator(mdates.WeekdayLocator())
+            # set major ticks format
+            ax.xaxis.set_major_formatter(mdates.DateFormatter(dt_format))
+        elif (kind == "density") | (kind == "kde"):
+            ax = pc.plot(ax=ax, kind="density", subplots=False)
+            ax.legend(title=f"{subsector} subsector")
+
+            for n, m in enumerate(pc.mean()):
+                c = ax.get_lines()[n].get_color()
+                ax.axvline(m, 0, 1, ls="--", lw=2, c=c)
+
+            # ax.set_xlim(-10,10)
+            ax.set_title(f"Data since {start_date}")
+            ax.set_xlabel("Price change (%)")
+
+        else:
+            raise ValueError(f"{kind} not found!")
+        return ax
+
     def plot_sectors_boxplot(
         self,
         sector=None,
         indicator=None,
         start_date=None,
         end_date=None,
+        palette="vlag",
         figsize=(10, 8),
         ax=None,
     ):
         indicator = self.indicator if indicator is None else indicator
         start_date = self.start_date if start_date is None else start_date
         end_date = self.end_date if end_date is None else end_date
-        sector = self.sector if sector is None else sector.lower()
+        sector = self.sector if sector is None else sector
         # add sector column
         df = self.get_indicator_per_sector(
-            indicator=indicator,
-            sector=sector,
-            start_date=start_date,
-            end_date=end_date,
+            indicator=indicator, start_date=start_date, end_date=end_date
         )
         if ax is None:
             fig, ax = pl.subplots(figsize=figsize)
@@ -267,7 +287,42 @@ class Screener(Network):
             d = df[df.Symbol.isin(symbols)]
 
         _ = sb.boxplot(
-            ax=ax, x="sector", y="pct_change", data=d, palette="vlag"
+            ax=ax, x="sector", y="pct_change", data=d, palette=palette
+        )
+        ax.set_title(
+            "Mean {} ({} - {})".format(indicator, start_date, end_date)
+        )
+        return ax
+
+    def plot_subsectors_boxplot(
+        self,
+        sector=None,
+        indicator=None,
+        start_date=None,
+        end_date=None,
+        palette="vlag",
+        figsize=(10, 8),
+        ax=None,
+    ):
+        indicator = self.indicator if indicator is None else indicator
+        start_date = self.start_date if start_date is None else start_date
+        end_date = self.end_date if end_date is None else end_date
+        # add sector column
+        df = self.get_indicator_per_subsector(
+            indicator=indicator, start_date=start_date, end_date=end_date
+        )
+        if ax is None:
+            fig, ax = pl.subplots(figsize=figsize)
+
+        if sector is None:
+            d = df.copy()
+        else:
+            subsectors = self.get_subsectors_of_sector(sector)
+            idx = self.get_indicator_per_subsector().subsector.isin(subsectors)
+            d = df.loc[idx, subsectors]
+
+        _ = sb.boxplot(
+            ax=ax, x="sector", y="pct_change", data=d, palette=palette
         )
         ax.set_title(
             "Mean {} ({} - {})".format(indicator, start_date, end_date)
