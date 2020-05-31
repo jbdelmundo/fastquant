@@ -3,7 +3,7 @@ matrix:
     - language: python
       install:
         - pip install --upgrade pip
-        - pip install -U -r python/requirements.txt dask[dataframe] distributed
+        - pip install -U -r python/requirements.txt
       before_script:
         - cd python
       script:
