@@ -1,6 +1,9 @@
 matrix:
   include:
     - language: python
+      install:
+        - pip install --upgrade pip
+        - pip install -U -r python/requirements.txt dask[dataframe] distributed
       before_script:
         - cd python
       script:
